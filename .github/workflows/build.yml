@@ -1,0 +1,74 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+
+    steps:
+    - name: Checkout mobile app
+      uses: actions/checkout@v4
+      with:
+        path: mobile
+
+    - name: Checkout shared library
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ github.repository_owner }}/scrobbler-for-discogs-libs
+        path: libs
+        # If the libs repo is private, you'll need to use a PAT
+        # token: ${{ secrets.LIBS_REPO_TOKEN }}
+
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: |
+          mobile/package-lock.json
+          libs/package-lock.json
+
+    - name: Install and build shared library
+      working-directory: libs
+      run: |
+        npm ci
+        npm run build
+
+    - name: Install mobile app dependencies
+      working-directory: mobile
+      run: |
+        # Install deps including the local libs package
+        npm ci
+        # Re-link the local libs (since it's not in the original package-lock)
+        npm install ../libs
+
+    - name: Check TypeScript compilation
+      working-directory: mobile
+      run: npx tsc --noEmit
+
+    - name: Run Expo prebuild (if configured)
+      working-directory: mobile
+      run: |
+        if [ -f "app.json" ]; then
+          echo "✓ Expo project detected"
+          # Optionally run expo prebuild to test native config
+          # npx expo prebuild --clean
+        fi
+
+    - name: Lint (if configured)
+      working-directory: mobile
+      run: |
+        if [ -f "package.json" ] && grep -q '"lint"' package.json; then
+          npm run lint
+        else
+          echo "No lint script found, skipping"
+        fi

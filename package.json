@@ -27,7 +27,7 @@
     "react-native-safe-area-context": "^5.6.2",
     "react-native-screens": "^4.19.0",
     "react-redux": "^9.2.0",
-    "scrobbler-for-discogs-libs": "file:../scrobbler-for-discogs-libs",
+    "scrobbler-for-discogs-libs": "^1.0.0",
     "tailwindcss": "^3.4.19"
   },
   "devDependencies": {
